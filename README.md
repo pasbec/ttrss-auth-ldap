@@ -23,8 +23,8 @@
     TTRSS_LDAP_BASE_DN=CN=Users,DC=some,DC=example,DC=com
     TTRSS_LDAP_BIND_DN=SOME\{login} # {login} gets dynamically replaced
     TTRSS_LDAP_BIND_PW={password} # {password} gets dynamically replaced
-    TTRSS_LDAP_SEARCH_FILTER=(&(objectClass=person)(sAMAccountName=???))
-    # TTRSS_LDAP_SEARCH_FILTER=(&(objectClass=person)(memberOf=CN=TinyTinyRSS-Users,CN=Users,DC=some,DC=example,DC=com)(sAMAccountName=???))
+    TTRSS_LDAP_SEARCH_FILTER=(&(objectClass=person)(sAMAccountName={login})) # {login} gets dynamically replaced 
+    # TTRSS_LDAP_SEARCH_FILTER=(&(objectClass=person)(memberOf=CN=TinyTinyRSS-Users,CN=Users,DC=some,DC=example,DC=com)(sAMAccountName={login}))
     TTRSS_LDAP_USER_ATTRIBUTE=sAMAccountName
     TTRSS_LDAP_NAME_ATTRIBUTE=name # optional
     TTRSS_LDAP_MAIL_ATTRIBUTE=mail # optional
@@ -35,13 +35,13 @@
     TTRSS_LDAP_BASE_DN=DC=example,DC=com
     TTRSS_LDAP_BIND_DN=CN=some-bind-user,DC=example,DC=com
     TTRSS_LDAP_BIND_PW=<SOME_BIND_USER_PASSWORD>
-    TTRSS_LDAP_SEARCH_FILTER=(&(objectClass=person)(uid=???))
+    TTRSS_LDAP_SEARCH_FILTER=(&(objectClass=person)(uid={login}))
     TTRSS_LDAP_USER_ATTRIBUTE=uid
 
     # General example using anonymous bind
     TTRSS_LDAP_URI=ldap://localhost
     TTRSS_LDAP_USE_TLS=false # optional
     TTRSS_LDAP_BASE_DN=DC=example,DC=com
-    TTRSS_LDAP_SEARCH_FILTER=(&(objectClass=person)(uid=???))
+    TTRSS_LDAP_SEARCH_FILTER=(&(objectClass=person)(uid={login}))
     TTRSS_LDAP_USER_ATTRIBUTE=uid
     ```

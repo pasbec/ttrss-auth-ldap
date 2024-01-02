@@ -130,8 +130,8 @@ class Auth_Ldap extends Auth_Base {
                 return FALSE;
             }
 
-            // Create search filter object
-            $filter = str_replace('???', ldap_escape($login), $search_filter);
+            // Create search filter string
+            $filter = strtr($search_filter, ['{login}' => ldap_escape($login)]);
 
             // Create search attribute array
             $attributes = array('cn');
@@ -184,17 +184,17 @@ class Auth_Ldap extends Auth_Base {
                 return FALSE;
             }
 
-            // Bind with search DN
+            // Bind with user DN
             $bind = @ldap_bind($ldap, $user_dn, $password);
             @ldap_close($ldap);
             if ($bind == TRUE) {
-                $this->log('Authentication successful for login \'' . $user_dn . '\'');
+                $this->log('Authentication successful for user DN \'' . $user_dn . '\'');
 
                 // Get user name
                 if (strlen($user_attribute) > 0) {
                     $username = $user_attributes[$user_attribute][0];
                     if (!is_string($username)) {
-                        $this->log('Unable to get user attribute \'' . $user_attribute . '\' for login \'' . $login . '\'', E_USER_ERROR);
+                        $this->log('Unable to get user attribute \'' . $user_attribute . '\' for user DN \'' . $user_dn . '\'', E_USER_ERROR);
                         return FALSE;
                     }
                 } else {
@@ -211,7 +211,7 @@ class Auth_Ldap extends Auth_Base {
                     if (is_string($name)) {
                         $user->full_name = $name;
                     } else {
-                        $this->log('Unable to get name attribute \'' . $name_attribute . '\' for login \'' . $login . '\'', E_USER_WARNING);
+                        $this->log('Unable to get name attribute \'' . $name_attribute . '\' for user DN \'' . $user_dn . '\'', E_USER_WARNING);
                     } 
                 }
 
@@ -221,7 +221,7 @@ class Auth_Ldap extends Auth_Base {
                     if (is_string($mail)) {
                         $user->email = $mail;
                     } else {
-                        $this->log('Unable to get mail attribute \'' . $mail_attribute . '\' for login \'' . $login . '\'', E_USER_WARNING);
+                        $this->log('Unable to get mail attribute \'' . $mail_attribute . '\' for user DN \'' . $user_dn . '\'', E_USER_WARNING);
                     } 
                 }
 
@@ -231,7 +231,7 @@ class Auth_Ldap extends Auth_Base {
                 // Return user ID
                 return $user_id;
             } else {
-                $this->log('Authentication failed for login \'' . $user_dn . '\'', E_USER_ERROR);
+                $this->log('Authentication failed for user DN \'' . $user_dn . '\'', E_USER_ERROR);
                 return FALSE;
             }
         }
