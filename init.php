@@ -4,7 +4,7 @@
  * Tiny Tiny RSS plugin for LDAP authentication
  * @author tsmgeek (tsmgeek@gmail.com)
  * @author hydrian (ben.tyger@tygerclan.net)
- * @author pasbec (p.b-dev+tt-rss@mailbox.org)
+ * @author pasbec (p.b-dev+ttrss@mailbox.org)
  *  Requires php-ldap 
  * @version 3.0
  */
