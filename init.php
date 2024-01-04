@@ -31,7 +31,7 @@ class Auth_Ldap extends Auth_Base {
             "Authenticates against some LDAP server",
             "pasbec",
             TRUE,
-			"https://github.com/pasbec/ttrss-auth-ldap"
+            "https://github.com/pasbec/ttrss-auth-ldap"
         );
     }
 
