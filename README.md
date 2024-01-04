@@ -42,13 +42,13 @@ LDAP authentication plugin for [Tiny Tiny RSS](https://tt-rss.org) forked from [
     TTRSS_LDAP_BASE_DN=DC=example,DC=com
     TTRSS_LDAP_BIND_DN=CN=some-bind-user,DC=example,DC=com
     TTRSS_LDAP_BIND_PW=<SOME_BIND_USER_PASSWORD>
-    TTRSS_LDAP_USER_FILTER=(&(objectClass=person)(uid={login}))
+    TTRSS_LDAP_USER_FILTER=(&(objectClass=person)(uid=%login))
     TTRSS_LDAP_USER_ATTRIBUTE=uid
 
     # General example using anonymous bind
     TTRSS_LDAP_URI=ldap://localhost
     TTRSS_LDAP_TLS=false # optional
     TTRSS_LDAP_BASE_DN=DC=example,DC=com
-    TTRSS_LDAP_USER_FILTER=(&(objectClass=person)(uid={login}))
+    TTRSS_LDAP_USER_FILTER=(&(objectClass=person)(uid=%login))
     TTRSS_LDAP_USER_ATTRIBUTE=uid
     ```
