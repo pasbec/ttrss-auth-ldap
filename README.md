@@ -1,10 +1,10 @@
 # ttrss-auth-ldap
 
-LDAP authentication plugin for [Tiny Tiny RSS](https://tt-rss.org) forked from [TTRSS-Auth-LDAP](https://github.com/hydrian/TTRSS-Auth-LDAP) - cleaned up, updated. Active Directory authentication is now also supported without some dedicated bind-account. A full Docker Compose example setup can be found [here](https://github.com/pasbec/ttrss-docker-compose)
+LDAP authentication plugin for [Tiny Tiny RSS](https://tt-rss.org) forked from [TTRSS-Auth-LDAP](https://github.com/hydrian/TTRSS-Auth-LDAP) - cleaned up, updated. Active Directory authentication is now also supported without some dedicated bind-account. A full Docker Compose example setup can be found [here](https://github.com/pasbec/ttrss-docker-compose).
 
 ## Setup
 
-1. Follow Tiny Tiny RSS [docker installation guide](https://tt-rss.org/wiki/InstallationNotes) but use some modified by creating a simple `Dockerfile` like
+1. Follow Tiny Tiny RSS [docker installation guide](https://tt-rss.org/wiki/InstallationNotes) but build your own image by using some simple `Dockerfile` like
     ```Dockerfile
     FROM cthulhoo/ttrss-fpm-pgsql-static:latest
 
