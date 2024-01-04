@@ -16,7 +16,8 @@ class Auth_Ldap extends Auth_Base {
     const LDAP_BIND_DN = "LDAP_BIND_DN";
     const LDAP_BIND_PW = "LDAP_BIND_PW";
     const LDAP_BASE_DN = "LDAP_BASE_DN";
-    const LDAP_SEARCH_FILTER = "LDAP_SEARCH_FILTER";
+    const LDAP_ADMIN_FILTER = "LDAP_ADMIN_FILTER";
+    const LDAP_USER_FILTER = "LDAP_USER_FILTER";
     const LDAP_USER_ATTRIBUTE = "LDAP_USER_ATTRIBUTE";
     const LDAP_NAME_ATTRIBUTE = "LDAP_NAME_ATTRIBUTE";
     const LDAP_MAIL_ATTRIBUTE = "LDAP_MAIL_ATTRIBUTE";
@@ -30,7 +31,7 @@ class Auth_Ldap extends Auth_Base {
             3.0,
             "Authenticates against some LDAP server",
             "pasbec",
-            TRUE,
+            true,
             "https://github.com/pasbec/ttrss-auth-ldap"
         );
     }
@@ -42,7 +43,8 @@ class Auth_Ldap extends Auth_Base {
         Config::add(self::LDAP_BIND_DN, "", Config::T_STRING);
         Config::add(self::LDAP_BIND_PW, "", Config::T_STRING);
         Config::add(self::LDAP_BASE_DN, "", Config::T_STRING);
-        Config::add(self::LDAP_SEARCH_FILTER, "", Config::T_STRING);
+        Config::add(self::LDAP_ADMIN_FILTER, "", Config::T_STRING);
+        Config::add(self::LDAP_USER_FILTER, "", Config::T_STRING);
         Config::add(self::LDAP_USER_ATTRIBUTE, "", Config::T_STRING);
         Config::add(self::LDAP_NAME_ATTRIBUTE, "", Config::T_STRING);
         Config::add(self::LDAP_MAIL_ATTRIBUTE, "", Config::T_STRING);
@@ -50,13 +52,13 @@ class Auth_Ldap extends Auth_Base {
         $host->add_hook($host::HOOK_AUTH_USER, $this);
     }
 
-    function authenticate($login, $password, $service = "") {
+    function authenticate($login, #[\SensitiveParameter] $password, $service = "") {
 
         if ($login && $password) {
 
             if (!function_exists('ldap_connect')) {
                 trigger_error('auth_ldap requires LDAP support');
-                return FALSE;
+                return false;
             }
 
             // Get configuration settings
@@ -65,129 +67,129 @@ class Auth_Ldap extends Auth_Base {
             $bind_dn = Config::get(self::LDAP_BIND_DN);
             $bind_pw = Config::get(self::LDAP_BIND_PW);
             $base_dn = Config::get(self::LDAP_BASE_DN);
-            $search_filter = Config::get(self::LDAP_SEARCH_FILTER);
+            $admin_filter = Config::get(self::LDAP_ADMIN_FILTER);
+            $user_filter = Config::get(self::LDAP_USER_FILTER);
             $user_attribute = Config::get(self::LDAP_USER_ATTRIBUTE);
             $name_attribute = Config::get(self::LDAP_NAME_ATTRIBUTE);
             $mail_attribute = Config::get(self::LDAP_MAIL_ATTRIBUTE);
 
             // Check URI
             $parsed_uri = parse_url($uri);
-            if ($parsed_uri == FALSE) {
+            if ($parsed_uri == false) {
                 $this->log('Server URI is required and not defined', E_USER_ERROR);
-                return FALSE;
+                return false;
             }
-            // $scheme = $parsed_uri['scheme'];
 
             // Check base DN
             if (empty($base_dn)) {
                 $this->log('Base DN is required and not defined', E_USER_ERROR);
-                return FALSE;
+                return false;
             }
 
             // Create LDAP connection
             $ldap = @ldap_connect($uri);
-            if ($ldap == FALSE) {
+            if ($ldap == false) {
                 $this->log('Could not connect to server URI \'' . $uri . '\'', E_USER_ERROR);
-                return FALSE;
+                return false;
             }
 
-            // Set protocol version 
+            // Adjust protocol version
             if (!@ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3)) {
                 $this->log('Failed to set LDAP Protocol version (LDAP_OPT_PROTOCOL_VERSION) to 3', E_USER_ERROR);
-                return FALSE;
+                return false;
             }
 
-            // Set referrals
-            if (!@ldap_set_option($ldap, LDAP_OPT_REFERRALS, FALSE)) {
-                $this->log('Failed to set LDAP referrals (LDAP_OPT_REFERRALS) to FALSE', E_USER_ERROR);
-                return FALSE;
+            // Adjust referrals
+            if (!@ldap_set_option($ldap, LDAP_OPT_REFERRALS, false)) {
+                $this->log('Failed to set LDAP referrals (LDAP_OPT_REFERRALS) to false', E_USER_ERROR);
+                return false;
             }
 
             // Enable TLS if enabled
             if ($use_tls) {
                 if (!@ldap_start_tls($ldap)) {
                     $this->log('Failed to enable TLS for URI \'' . $uri . '\'', E_USER_ERROR);
-                    return FALSE;
+                    return false;
                 }
             }
 
-            // Process bind input
-            $_bind_dn = NULL;
-            $_bind_pw = NULL;
-            if (!empty($bind_dn)) {
-                $_bind_dn = strtr($bind_dn, ['{login}' => $login]);
-            }
-            if (!empty($bind_pw)) {
-                $_bind_pw = strtr($bind_pw, ['{password}' => $password]);
-            }
+            // Create escaped bind credentials
+            $_bind_dn = empty($bind_dn) ? null : strtr($bind_dn, ['{login}' => ldap_escape($login, "", LDAP_ESCAPE_DN)]);
+            $_bind_pw = empty($bind_pw) ? null : strtr($bind_pw, ['{password}' => $password]);
 
-            // Bind 
-            $bind = @ldap_bind($ldap, $_bind_dn, $_bind_pw);
-            if ($bind == TRUE) {
+            // Bind
+            if (@ldap_bind($ldap, $_bind_dn, $_bind_pw)) {
                 $this->log('Bind successful for \'' . $_bind_dn . '\'');
             } else {
                 $this->log('Bind failed for \'' . $_bind_dn . '\'');
-                return FALSE;
+                return false;
             }
 
-            // Create search filter string
-            $filter = strtr($search_filter, ['{login}' => ldap_escape($login)]);
+            // Create escaped search filter strings
+            $_admin_filter = strtr($admin_filter, ['{login}' => ldap_escape($login, "", LDAP_ESCAPE_FILTER)]);
+            $_user_filter = strtr($user_filter, ['{login}' => ldap_escape($login, "", LDAP_ESCAPE_FILTER)]);
+            $filter_info = 'admin-filter \'' . $_admin_filter . '\' and user-filter \'' . $_user_filter . '\'';
 
             // Create search attribute array
             $attributes = array('cn');
-            if (!empty($user_attribute)) {
-                array_push($attributes, $user_attribute);
-            }
-            if (!empty($name_attribute)) {
-                array_push($attributes, $name_attribute);
-            }
-            if (!empty($mail_attribute)) {
-                array_push($attributes, $mail_attribute);
-            }
+            if (!empty($user_attribute)) array_push($attributes, $user_attribute);
+            if (!empty($name_attribute)) array_push($attributes, $name_attribute);
+            if (!empty($mail_attribute)) array_push($attributes, $mail_attribute);
             $attributes = array_unique($attributes);
 
             // Search
-            $searchResults = @ldap_search($ldap, $base_dn, $filter, $attributes, 0, 0, LDAP_DEREF_NEVER);
-            if ($searchResults == FALSE) {
-                $this->log('Search failed for login \'' . $login . '\'', E_USER_ERROR);
-                return FALSE;
+            $admin_search = empty($admin_filter) ? null : @ldap_search($ldap, $base_dn, $_admin_filter, $attributes);
+            $user_search = empty($user_filter) ? null : @ldap_search($ldap, $base_dn, $_user_filter, $attributes);
+            if (($admin_search == false) && ($user_search == false)) {
+                $this->log('Search failed with ' . $filter_info, E_USER_ERROR);
+                return false;
             }
 
             // Check search result count
-            $count = @ldap_count_entries($ldap, $searchResults);
-            if ($count > 1) {
-                $this->log('Multiple DNs found for login \'' . $login . '\'', E_USER_ERROR);
-                return FALSE;
-            } elseif ($count == 0) {
-                $this->log('Unknown login \'' . $login . '\'');
-                return FALSE;
+            $admin_count = is_null($admin_search) ? 0 : @ldap_count_entries($ldap, $admin_search);
+            $user_count = is_null($user_search) ? 0 : @ldap_count_entries($ldap, $user_search);
+            if ($admin_count > 1 || $user_count > 1) {
+                $this->log('Ambiguous login with ' . $filter_info, E_USER_WARNING);
+                return false;
+            } elseif ($admin_count == 0 && $user_count == 0) {
+                $this->log('Invalid login with ' . $filter_info);
+                return false;
             }
 
             // Get user entry
-            $user_entry = @ldap_first_entry($ldap, $searchResults);
-            if ($user_entry == FALSE) {
-                $this->log('Unable to get user entry for login \'' . $login . '\'', E_USER_ERROR);
-                return FALSE;
-            }
-
-            // Get user attributes
-            $user_attributes = @ldap_get_attributes($ldap, $user_entry);
-            if ($user_entry == FALSE) {
-                $this->log('Unable to get user attributes for login \'' . $login . '\'', E_USER_ERROR);
-                return FALSE;
+            $admin_entry = !$admin_count ? null : @ldap_first_entry($ldap, $admin_search);
+            $user_entry = !$user_count ? null : @ldap_first_entry($ldap, $user_search);
+            if ($admin_entry === false || $user_entry === false) {
+                $this->log('Unable to get user entry with ' . $filter_info, E_USER_ERROR);
+                return false;
             }
             
             // Get user DN
-            $user_dn = @ldap_get_dn($ldap, $user_entry);
-            if ($user_dn == FALSE) {
-                $this->log('Unable to get user DN for login \'' . $login . '\'', E_USER_ERROR);
-                return FALSE;
+            $admin_dn = is_null($admin_entry) ? null : @ldap_get_dn($ldap, $admin_entry);
+            $user_dn = is_null($user_entry) ? null : @ldap_get_dn($ldap, $user_entry);
+            if ($admin_dn === false || $user_dn === false) {
+                $this->log('Unable to get user DN with ' . $filter_info, E_USER_ERROR);
+                return false;
+            }
+
+            // Get user attributes
+            $admin_attributes = is_null($admin_entry) ? null : @ldap_get_attributes($ldap, $admin_entry);
+            $user_attributes = is_null($user_entry) ? null : @ldap_get_attributes($ldap, $user_entry);
+
+            // Admin consistency check
+            if ($admin_count) {
+                if ($user_count && ($admin_dn != $user_dn)) {
+                    $this->log('Inconsistent login with ' . $filter_info, E_USER_WARNING);
+                    return false;
+                }
+                $user_dn = $admin_dn;
+                $user_attributes = $admin_attributes;
             }
 
             // Bind with user DN
             $bind = @ldap_bind($ldap, $user_dn, $password);
             @ldap_close($ldap);
-            if ($bind == TRUE) {
+            if ($bind == true) {
                 $this->log('Authentication successful for user DN \'' . $user_dn . '\'');
 
                 // Get user name
@@ -195,7 +197,7 @@ class Auth_Ldap extends Auth_Base {
                     $username = $user_attributes[$user_attribute][0];
                     if (!is_string($username)) {
                         $this->log('Unable to get user attribute \'' . $user_attribute . '\' for user DN \'' . $user_dn . '\'', E_USER_ERROR);
-                        return FALSE;
+                        return false;
                     }
                 } else {
                     $username = $login;
@@ -205,7 +207,7 @@ class Auth_Ldap extends Auth_Base {
                 $user_id = $this->auto_create_user($username);
                 $user = ORM::for_table('ttrss_users')->find_one($user_id);
 
-                // Update full user name
+                // Update name
                 if (strlen($name_attribute) > 0) {
                     $name = $user_attributes[$name_attribute][0];
                     if (is_string($name)) {
@@ -215,7 +217,7 @@ class Auth_Ldap extends Auth_Base {
                     } 
                 }
 
-                // Update user email
+                // Update email
                 if (strlen($mail_attribute) > 0) {
                     $mail = $user_attributes[$mail_attribute][0];
                     if (is_string($mail)) {
@@ -225,6 +227,13 @@ class Auth_Ldap extends Auth_Base {
                     } 
                 }
 
+                // Update access level
+                if ($admin_count) {
+                    $user->access_level = UserHelper::ACCESS_LEVEL_ADMIN;
+                } else {
+                    $user->access_level = UserHelper::ACCESS_LEVEL_USER;
+                }
+
                 // Save user data
                 $user->save();
 
@@ -232,11 +241,11 @@ class Auth_Ldap extends Auth_Base {
                 return $user_id;
             } else {
                 $this->log('Authentication failed for user DN \'' . $user_dn . '\'', E_USER_ERROR);
-                return FALSE;
+                return false;
             }
         }
 
-        return FALSE;
+        return false;
     }
 
     function api_version() {
