@@ -1,6 +1,11 @@
 # ttrss-auth-ldap
 
-LDAP authentication plugin for [Tiny Tiny RSS](https://tt-rss.org) forked from [TTRSS-Auth-LDAP](https://github.com/hydrian/TTRSS-Auth-LDAP) - cleaned up, updated. Active Directory authentication is now also supported without some dedicated bind-account. A full Docker Compose example setup can be found [here](https://github.com/pasbec/ttrss-docker-compose).
+LDAP authentication plugin for [Tiny Tiny RSS](https://tt-rss.org) forked from [TTRSS-Auth-LDAP](https://github.com/hydrian/TTRSS-Auth-LDAP) - updated and extended:
+ - Active Directory authentication is now supported *without* some dedicated bind-account.
+ - There is a new filter for admin-users.
+ - Full name and email can be fetched from LDAP.
+ 
+ A full Docker Compose example setup can be found [here](https://github.com/pasbec/ttrss-docker-compose).
 
 ## Setup
 
@@ -30,7 +35,7 @@ LDAP authentication plugin for [Tiny Tiny RSS](https://tt-rss.org) forked from [
     TTRSS_LDAP_BASE_DN=CN=Users,DC=some,DC=example,DC=com
     TTRSS_LDAP_BIND_DN=SOME\%login
     TTRSS_LDAP_BIND_PW=%password
-    TTRSS_LDAP_ADMIN_FILTER=(&(objectClass=person)(memberOf:1.2.840.113556.1.4.1941:=CN=TinyTinyRSS-Admins,CN=Users,DC=some,DC=example,DC=com)(sAMAccountName=%login))
+    TTRSS_LDAP_ADMIN_FILTER=(&(objectClass=person)(memberOf:1.2.840.113556.1.4.1941:=CN=TinyTinyRSS-Admins,CN=Users,DC=some,DC=example,DC=com)(sAMAccountName=%login)) # optional
     TTRSS_LDAP_USER_FILTER=(&(objectClass=person)(memberOf:1.2.840.113556.1.4.1941:=CN=TinyTinyRSS-Users,CN=Users,DC=some,DC=example,DC=com)(sAMAccountName=%login))
     TTRSS_LDAP_USER_ATTRIBUTE=sAMAccountName
     TTRSS_LDAP_NAME_ATTRIBUTE=name # optional
